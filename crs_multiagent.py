@@ -196,11 +196,6 @@ QualityControlSpecialist.register_reply(
     config={"callback": None},
 )
 
-# LogisticsCoordinator.register_reply(
-#     [autogen.Agent, None],
-#     reply_func=print_messages, 
-#     config={"callback": None},
-# )
 SalesRepresentatives.register_reply(
     [autogen.Agent, None],
     reply_func=print_messages, 
