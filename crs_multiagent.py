@@ -5,19 +5,19 @@ import spacy
 import autogen
 import panel as pn
 import json
+import os
 
 config_list = [
     {
-        "api_base": "http://localhost:1234/v1",
-        "api_type": "open_ai",
-        "api_key": "sk-",
+        "model": "gpt-3.5-turbo-0613",
+        "api_key": os.getenv("OPENAI_API_KEY")
     }
 ]
 
-config_list = config_list_from_json(
-    env_or_file="OAI_CONFIG_LIST.json",
-    file_location=".",
-)
+# config_list = config_list_from_json(
+#     env_or_file="OAI_CONFIG_LIST.json",
+#     file_location=".",
+# )
 
 llm_config = {"config_list": config_list, "seed": 42, "request_timeout": 600,
               "temperature": 0,}
