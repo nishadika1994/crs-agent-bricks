@@ -19,7 +19,7 @@ config_list = [
 #     file_location=".",
 # )
 
-llm_config = {"config_list": config_list, "seed": 42, "request_timeout": 600,
+llm_config = {"config_list": config_list, "seed": 42, "timeout": 600,
               "temperature": 0,}
 
 admin = UserProxyAgent(
