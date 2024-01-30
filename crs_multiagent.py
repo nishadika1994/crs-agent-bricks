@@ -5,21 +5,21 @@ import spacy
 import autogen
 import panel as pn
 import json
+import os
 
 config_list = [
     {
-        "api_base": "http://localhost:1234/v1",
-        "api_type": "open_ai",
-        "api_key": "sk-",
+        "model": "gpt-3.5-turbo-0613",
+        "api_key": os.getenv("OPENAI_API_KEY")
     }
 ]
 
-config_list = config_list_from_json(
-    env_or_file="OAI_CONFIG_LIST.json",
-    file_location=".",
-)
+# config_list = config_list_from_json(
+#     env_or_file="OAI_CONFIG_LIST.json",
+#     file_location=".",
+# )
 
-llm_config = {"config_list": config_list, "seed": 42, "request_timeout": 600,
+llm_config = {"config_list": config_list, "seed": 42, "timeout": 600,
               "temperature": 0,}
 
 admin = UserProxyAgent(
@@ -34,13 +34,13 @@ admin = UserProxyAgent(
 DesignConsultants = AssistantAgent(
     name="DesignConsultants",
     system_message="""
-Design Consultants.Building upon the user input, the Design Consultant takes on the role of providing aesthetic guidance and design support. 
-Collaborating closely with the customer, the design consultant delves into the specifics of the design vision. 
-you expert advice on selecting bricks that align with the desired aesthetic, taking into account considerations such as color, 
-texture, and patterns. 
-You plays a crucial role in creating a cohesive and visually appealing brick design tailored to the project.
-Need to anwser based on the https://www.pghbricks.com.au/ 
-      website content.And you act as Design Consultant at PGH Bricks""",
+      Design Consultants. Building upon the user input, the Design Consultant takes on the role of providing aesthetic guidance and design support. 
+      Collaborating closely with the customer, the design consultant delves into the specifics of the design vision. 
+      you expert advice on selecting bricks that align with the desired aesthetic, considering considerations such as color, 
+      texture, and patterns. You can recommend multiple options to the customer.
+      You play a crucial role in creating a cohesive and visually appealing brick design tailored to the project. You have to give the available bricks option and the most suitable brick for the customer's needs. Need to give basic details about that brick.
+      You only need to answer based on the https://www.pghbricks.com.au/ 
+      website content.You should not mention the brick not available on the PGH website. And you act as Design Consultant at PGH Bricks""",
     llm_config=llm_config,
 )
 
@@ -48,22 +48,23 @@ TechnicalExpert = AssistantAgent(
     name="TechnicalExpert",
     llm_config=llm_config,
     system_message="""Once the design is finalized, your role is to evaluate the structural requirements of the project. 
-    your responsibilities include analyzing the design to understand the project's structural needs. 
-    You provides recommendations on bricks that not only meet building codes and standards but also contribute to 
-    the overall stability and safety of the construction project.
-      You address technical concerns and ensure that the chosen bricks align with the structural requirements. 
-      Need to give a detail anwser accourding to your role.
-      Need to anwser based on the https://www.pghbricks.com.au/ 
-      website content.And you act as Technical Expert at PGH Bricks""",)
+      your responsibilities include analyzing the design to understand the project's structural needs. You have to think as a technical expert and give feedback and input if the design consultant recommends brick is suitable or not.
+      and need to tell you about the technical side. If DesignConsultants recommends multiple you have to give each of the selections feedback.
+      You provide recommendations that not only meet building codes and standards but also contribute to 
+      the overall stability and safety of the construction project.
+      You address technical concerns and ensure that the chosen bricks align with the structural requirements. Need to check the technical specification and mentiond in the replay.
+      Need to give a detailed answer according to your role.
+      You only need to answer based on the https://www.pghbricks.com.au/ 
+      website content.You should not mention the brick not available on the PGH website. And you act as a Technical Expert at PGH Bricks""",)
 
 
 QualityControlSpecialist = AssistantAgent(
     name="QualityControlSpecialist",
-    system_message="""The Quality Control Specialist. Your role is assuring the product quality. You verify that the selected bricks meet the company's stringent
+    system_message="""The Quality Control Specialist. Your role is to ensure the product quality. You verify that the selected bricks by DesignConsultants meet the company's stringent
       quality standards and specifications. Through detailed quality checks, 
-    the specialist ensures the durability, strength, and longevity of the chosen bricks. Additionally, you provide comprehensive information on the quality assurance
-      processes in place, instilling confidence in the customer regarding the selected materials.Need to give a detail anwser based on your role. Need to anwser based on the https://www.pghbricks.com.au/ 
-      website content.And you act as Quality Control Specialist at PGH Bricks""",
+      you have to report on the durability, strength, and longevity of the chosen bricks. Additionally, you provide comprehensive information on the quality assurance
+      processes in place, instilling confidence in the customer regarding the selected materials. You need to give a detailed answer based on your role. You only need to answer based on the https://www.pghbricks.com.au/ 
+      website content.You should not mention the brick not available on the PGH website. And you act as Quality Control Specialist at PGH Bricks""",
     llm_config=llm_config,
 )
 
@@ -71,8 +72,12 @@ SalesRepresentatives = AssistantAgent(
     name="SalesRepresentatives",
     llm_config=llm_config,
     system_message="""
-     Sales Representative, In the end of consultation process for selecting bricks, you give the overall feed back to the custommer based on the ideas of
-       DesignConsultants,TechnicalExpert,QualityControlSpecialist. And you have to promte your comapny and recommend items to increase the sales.And you act as Sales Representative at PGH Bricks""",
+       Sales Representative, At the end of the consultation process for selecting bricks, you give the overall feedback to the customer based on the ideas of
+       Design Consultants, Technical Expert, Quality Control Specialist.
+       Mentioned the brick or bricks that are most suitable for the customer's needs if prices range can menton, add price details also. And include brick shape, color, overall look. 
+       And you have to promote your company and recommend items to increase the 
+       sales. You only need to answer based on the https://www.pghbricks.com.au/ 
+       website content.You should not mention the brick not available on the PGH website.You act as a Sales Representative at PGH Bricks""",
 )
 
 groupchat = GroupChat(
@@ -134,6 +139,12 @@ def print_messages(recipient, messages, sender, config):
         _avatar = avatar.get(messages[-1].get('name', 'admin'))
         _user = messages[-1].get('name', 'Assistant')
         _message = messages[-1].get('content', '')
+
+        # Stop the conversation after Sales Representative replies
+        if _user == 'SalesRepresentatives':
+            stop_conversation = True  
+            chat_interface.send(_message, 'PGH Bricks', avatar=_avatar, respond=False)
+            return stop_conversation, None
 
         # Check if the DesignConsultants agent has requested more information
         if _user != 'admin' and contains_request_for_more_info(_message):
