@@ -13,7 +13,6 @@ ENV PATH="/home/app/.local/bin:${PATH}"
 # set python path
 ENV PYTHONPATH="/home/app/.local/bin:/app:${PYTHONPATH}"
 
-# Run Autogenstudio
 RUN autogenstudio version
 
 EXPOSE 8088
