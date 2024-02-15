@@ -1,0 +1,1 @@
+docker build -f Dockerfile --tag bistecglobal/recrutement-agent:1.0.0 .
